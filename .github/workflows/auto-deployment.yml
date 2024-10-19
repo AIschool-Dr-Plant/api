@@ -1,0 +1,15 @@
+name: Flask Auto Deployment Pipeline
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    steps:
+      # 1. 저장소로 이동 및 최신 코드 가져오기
+      - name: Fetch and Pull from Git
+        run: cd /home/api/git/api && git fetch && git pull origin master

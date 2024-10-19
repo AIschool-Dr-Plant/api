@@ -3,13 +3,21 @@ name: Flask Auto Deployment Pipeline
 on:
   push:
     branches:
-      - master
+      - master  # master 브랜치에 푸시될 때 트리거
 
 jobs:
   deploy:
-    runs-on: self-hosted
+    runs-on: self-hosted  # 자체 호스팅된 서버에서 실행
 
     steps:
-      # 1. 저장소로 이동 및 최신 코드 가져오기
-      - name: Fetch and Pull from Git
+      # 1단계: Flask 서버 중지
+      - name: Stop Flask Server
+        run: /home/api/.flask-server.sh stop
+
+      # 2단계: 저장소 이동 및 최신 코드 가져오기
+      - name: Fetch and Pull Latest Code
         run: cd /home/api/git/api && git fetch && git pull origin master
+
+      # 3단계: Flask 서버 시작
+      - name: Start Flask Server
+        run: /home/api/.flask-server.sh start

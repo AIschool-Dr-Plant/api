@@ -1,6 +1,8 @@
 from flask import Flask, jsonify, render_template, request, redirect, url_for
 from module.db_module import Database  # 모듈 import
 from datetime import datetime
+from module.pear_infection_model import DiseasePredictionModel
+
 
 import pandas as pd
 import os
@@ -8,6 +10,8 @@ import os
 
 
 
+infectionModel = DiseasePredictionModel();
+print(infectionModel.predict_infection_rates(25))
 
 # CSV 파일의 경로 설정
 csv_path = os.path.join(os.path.dirname(__file__), 'module', 'sensor_data_key.csv')

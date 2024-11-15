@@ -52,11 +52,15 @@ class DiseasePredictionModel:
         self.tree_model_B.fit(X, y2)
         self.tree_model_C.fit(X, y3)
 
-    def predict_infection_rates(self, temperature):
-        temperature_input = np.array([[temperature]])
-        predicted_rate_A = self.tree_model_A.predict(temperature_input)[0]
-        predicted_rate_B = self.tree_model_B.predict(temperature_input)[0]
-        predicted_rate_C = self.tree_model_C.predict(temperature_input)[0]
+    def predict_infection_rates(self, rainPredict):
+        predicted_rate_A = predicted_rate_B = predicted_rate_C = 0
+        temperature = rainPredict['temp']
+        
+        if rainPredict['rp'] > 0:
+            temperature_input = np.array([[temperature]])
+            predicted_rate_A = self.tree_model_A.predict(temperature_input)[0]
+            predicted_rate_B = self.tree_model_B.predict(temperature_input)[0]
+            predicted_rate_C = self.tree_model_C.predict(temperature_input)[0]
 
         result = {
             "Temp": temperature,
@@ -65,4 +69,4 @@ class DiseasePredictionModel:
             "C": round(predicted_rate_C, 2)
         }
 
-        return json.dumps(result, indent=4)
+        return result

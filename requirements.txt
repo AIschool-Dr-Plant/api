@@ -1,2 +1,6 @@
-Flask==2.1.2
-flask-mysql-connector==1.1.8
+Flask>=2.1.2
+flask-cors
+pandas
+numpy
+scikit-learn
+mysql-connector-python

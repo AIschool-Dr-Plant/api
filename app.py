@@ -36,9 +36,9 @@ db = Database()
 
 app = Flask(__name__)
 
-CORS(app, resources={
-    r"/api/data": {"origins": "*"},
-    r"/api/predict":{"origins": "https://localhost:8443"}
+# 특정 오리진만 허용하도록 수정
+CORS(app, supports_credentials=True, resources={
+    r"/api/*": {"origins": "https://123.100.174.98:8184"}
 })
 
 # Load environment variables from .env

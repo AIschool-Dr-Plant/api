@@ -92,4 +92,9 @@ def predict():
     return jsonify(result),200
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5050)
+    if os.getenv('FLASK_ENV') == 'production':
+        # 서버 환경: SSL 적용
+        app.run(host='0.0.0.0', port=5050, ssl_context=('cert.pem', 'key.pem'))
+    else:
+        # 로컬 환경: SSL 없이 실행
+        app.run(host='0.0.0.0', port=5050)

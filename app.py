@@ -2,15 +2,16 @@ from flask import Flask, jsonify, render_template, request, redirect, url_for
 from flask_cors import CORS
 from module.db_module import Database  # 모듈 import
 from datetime import datetime, timedelta
+
 from module.pear_infection_model import DiseasePredictionModel
+from module.rain_prediction import get_rain_predictor
 
 import json
 import pandas as pd
 import os
 
 
-
-
+# InfectionPrediction 객체 생성
 infectionModel = DiseasePredictionModel();
 
 # CSV 파일의 경로 설정
@@ -67,30 +68,25 @@ def api_test():
 def predict():
     data = dict(request.get_json());
     # 기본값은 오늘 날짜로 설정
-    date_obj = datetime.today()
+    date_obj = datetime.strptime('2023-07-14', '%Y-%m-%d')
 
     # 'date' 키가 있는 경우 처리
     if 'date' in data:
         try:
             # 'date' 값을 날짜 형식으로 변환 시도
             date_obj = datetime.strptime(data['date'], '%Y-%m-%d')
-            after_1 = date_obj + timedelta(days=1)
-            after_2 = after_1 + timedelta(days=1)
-            after_3 = after_2 + timedelta(days=1)
         except (ValueError, TypeError):
             # 날짜 형식이 비정상적인 경우 오늘 날짜를 유지
             pass
-    #sampleData
-    rain_predict = {
-        "target_date":{"date":date_obj,"rp":1,"temp":26.12},
-        "after_1":{"date":after_1,"rp":0,"temp":17.58},
-        "after_2":{"date":after_2,"rp":1,"temp":10.17},
-        "after_3":{"date":after_3,"rp":0,"temp":36.86},
-    }
+    
+    # RainPrediction 객체 생성
+    rain_predictor = get_rain_predictor(date_obj.strftime("%Y-%m-%d"))
+
+    rain_predict = rain_predictor.predict()
     result=[]
     for item in rain_predict:
         infect_predict = infectionModel.predict_infection_rates(rain_predict[item])
-        temp_data = dict({'date':rain_predict[item]['date'].strftime('%Y-%m-%d'),'rain':rain_predict[item]['rp'],'predict':infect_predict})
+        temp_data = dict({'date':rain_predict[item]['date'],'rain':rain_predict[item]['rp'],'predict':infect_predict})
         result.append(temp_data)
     # 유효한 날짜를 반환
     return jsonify(result),200

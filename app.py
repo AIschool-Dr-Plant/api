@@ -1,13 +1,18 @@
 from flask import Flask, jsonify, render_template, request, redirect, url_for
+from flask_cors import CORS
 from module.db_module import Database  # 모듈 import
-from datetime import datetime
+from datetime import datetime, timedelta
 
+from module.pear_infection_model import DiseasePredictionModel
+from module.rain_prediction import get_rain_predictor
+
+import json
 import pandas as pd
 import os
 
 
-
-
+# InfectionPrediction 객체 생성
+infectionModel = DiseasePredictionModel();
 
 # CSV 파일의 경로 설정
 csv_path = os.path.join(os.path.dirname(__file__), 'module', 'sensor_data_key.csv')
@@ -31,6 +36,10 @@ db = Database()
 
 app = Flask(__name__)
 
+# 특정 오리진만 허용하도록 수정
+CORS(app, supports_credentials=True, resources={
+    r"/api/*": {"origins": "https://123.100.174.98:8184"}
+})
 
 # Load environment variables from .env
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'default_secret_key')
@@ -55,5 +64,53 @@ def api_test():
     json_data = sensor_data_parse(dict(request.args))
     return render_template('sensor_data.html', data=json_data)
 
+@app.route('/api/predict',methods=['POST'])
+def predict():
+    data = dict(request.get_json());
+    # 기본값은 오늘 날짜로 설정
+    date_obj = datetime.strptime('2023-07-14', '%Y-%m-%d')
+
+    # 'date' 키가 있는 경우 처리
+    if 'date' in data:
+        try:
+            # 'date' 값을 날짜 형식으로 변환 시도
+            date_obj = datetime.strptime(data['date'], '%Y-%m-%d')
+        except (ValueError, TypeError):
+            # 날짜 형식이 비정상적인 경우 오늘 날짜를 유지
+            pass
+    
+    # RainPrediction 객체 생성
+    rain_predictor = get_rain_predictor(date_obj.strftime("%Y-%m-%d"))
+
+    rain_predict = rain_predictor.predict()
+    result=[]
+    for item in rain_predict:
+        infect_predict = infectionModel.predict_infection_rates(rain_predict[item])
+        temp_data = dict({'date':rain_predict[item]['date'],'rain':rain_predict[item]['rp'],'predict':infect_predict})
+        result.append(temp_data)
+    # 유효한 날짜를 반환
+    return jsonify(result),200
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5050)
+   if os.getenv('FLASK_ENV') == 'production':
+        # HTTPS 서버
+        from multiprocessing import Process
+
+        def run_https():
+            app.run(host='0.0.0.0', port=5050, ssl_context=('cert.pem', 'key.pem'))
+
+        def run_http():
+            app.run(host='0.0.0.0', port=5000)  # HTTP 서버
+
+        # 두 서버를 별도의 프로세스로 실행
+        https_server = Process(target=run_https)
+        http_server = Process(target=run_http)
+
+        https_server.start()
+        http_server.start()
+
+        https_server.join()
+        http_server.join()
+    else:
+        # 로컬 개발 환경
+        app.run(host='0.0.0.0', port=5050)

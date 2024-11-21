@@ -92,9 +92,25 @@ def predict():
     return jsonify(result),200
 
 if __name__ == '__main__':
-    if os.getenv('FLASK_ENV') == 'production':
-        # 서버 환경: SSL 적용
-        app.run(host='0.0.0.0', port=5050, ssl_context=('cert.pem', 'key.pem'))
+   if os.getenv('FLASK_ENV') == 'production':
+        # HTTPS 서버
+        from multiprocessing import Process
+
+        def run_https():
+            app.run(host='0.0.0.0', port=5050, ssl_context=('cert.pem', 'key.pem'))
+
+        def run_http():
+            app.run(host='0.0.0.0', port=5000)  # HTTP 서버
+
+        # 두 서버를 별도의 프로세스로 실행
+        https_server = Process(target=run_https)
+        http_server = Process(target=run_http)
+
+        https_server.start()
+        http_server.start()
+
+        https_server.join()
+        http_server.join()
     else:
-        # 로컬 환경: SSL 없이 실행
+        # 로컬 개발 환경
         app.run(host='0.0.0.0', port=5050)

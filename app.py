@@ -92,7 +92,7 @@ def predict():
     return jsonify(result),200
 
 if __name__ == '__main__':
-   if os.getenv('FLASK_ENV') == 'production':
+    if os.getenv('FLASK_ENV') == 'production':
         # HTTPS 서버
         from multiprocessing import Process
 
